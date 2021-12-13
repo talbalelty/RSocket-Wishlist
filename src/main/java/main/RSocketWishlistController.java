@@ -30,13 +30,27 @@ public class RSocketWishlistController {
 			})// Mono<WishListBoundary>
 			.map(this::toEntity) // Mono<MessageEntity>
 			.flatMap(this.messageDao::save) // Mono<MessageEntity>
-			.map(this::fromEntity)
+			.map(this::toBoundary)
 			.log();		
 	}
 	
 	
 	private WishListEntity toEntity(WishListBoundary boundary) {
-		
+		WishListEntity rv = new WishListEntity();
+		rv.setWishListId(boundary.getWishListId());
+		rv.setName(boundary.getName());
+		rv.setCreatedTimestamp(boundary.getCreatedTimestamp());
+		rv.setUserEmail(boundary.getUserEmail());
+		return rv;
+	}
+	
+	private WishListBoundary toBoundary(WishListEntity entity) {
+		WishListBoundary rv = new WishListBoundary();
+		rv.setWishListId(entity.getWishListId());
+		rv.setName(entity.getName());
+		rv.setCreatedTimestamp(entity.getCreatedTimestamp());
+		rv.setUserEmail(entity.getUserEmail());
+		return rv;
 	}
 	
 	
