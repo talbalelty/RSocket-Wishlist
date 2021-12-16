@@ -43,7 +43,7 @@ public class RSocketWishlistController {
 	@MessageMapping("wishList-create-req-resp")// you can set the controller's invocation string to be anything
 	public Mono<WishListBoundary> createWishlist(WishListBoundary input){
 		System.err.println("$$$$$$$$$$$$$$$$$$$");
-		this.logger.debug("Received wishList-create-req-resp: " + input);
+		this.logger.error("Received wishList-create-req-resp: " + input);
 		
 		// store boundary in DB and return the boundary including updated timestamp and id
 		return Mono.just(input) // Mono<WishListBoundary>
@@ -61,18 +61,22 @@ public class RSocketWishlistController {
 	// java -jar rsc-0.9.1.jar --debug  --fnf  --data "{\"wishListId\":\"61b77330b17283089c8ddf29\", \"productId\":\"p42\"}" --route addProd-fire-and-forget tcp://localhost:7000
 	@MessageMapping("addProd-fire-and-forget")// you can set the controller's invocation string to be anything
 	public Mono<Void> addProductToWishlist(WishListProductBoundary input){
-		this.logger.debug("Received addProd-fire-and-forget: " + input);
+		System.err.println("$$$$$$$$$$$$$$$$$$$");
+		this.logger.error("Received addProd-fire-and-forget: " + input);
 		
 		return this.wishListDao
-				.existsById(input.getWishListId())
+				.existsById(input.getWishListId()).log()
 				.flatMap(exist -> {
 					if (exist) {
-						if (input.getProductId() != null && !input.getProductId().isEmpty()) {							
-							this.wishListProductDao.save(toEntity(input));
+						if (input.getProductId() != null && !input.getProductId().isEmpty()) {
+							System.err.println(toEntity(input).toString());
+							return this.wishListProductDao.save(toEntity(input)).log();
 						}
 					}
+					System.err.println("$$$$$$$$$$$$$$$$$$$");
 					return Mono.empty();
-				});
+				})
+				.then();
 	}
 	
 	private WishListProductEntity toEntity(WishListProductBoundary boundary) {

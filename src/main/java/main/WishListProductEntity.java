@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 //	"productId":"p42"
 //}
 
-@Document(collection = "WISHLISTPRODUCT")
+@Document(collection = "PRODUCTSSSSS")
 public class WishListProductEntity {
 	private String wishListId;
 	private String productId;
