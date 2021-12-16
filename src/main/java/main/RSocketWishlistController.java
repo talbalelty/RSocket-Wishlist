@@ -2,12 +2,15 @@ package main;
 
 import java.util.Date;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
 @Controller
@@ -22,11 +25,24 @@ public class RSocketWishlistController {
 		this.wishListDao = wishListDao;
 		this.wishListProductDao = wishListProductDao;
 	}
+	
+	@PostConstruct
+	public void init() {
+		Hooks.onErrorDropped(e->{
+//			if (e instanceof CancellationException 
+//				|| e.getCause() instanceof CancellationException) {
+//				this.logger.trace("Operator called default onErrorDropped", e);
+//			}else {
+//				this.logger.error("Error while interacting with consumer", e);
+//			}
+		});
+	}
 
 	// CLI INVOCATION SAMPLE (WINDOWS USE CMD!):
 	// java -jar rsc-0.9.1.jar --debug  --request  --data "{\"wishListId\":\"123\", \"name\":\"birthday wishlist\", \"userEmail\":\"dummy@s.afeka.ac.il\",  \"createdTimestamp\":\"2021-12-09T13:38:23.104+0000\"}" --route wishList-create-req-resp tcp://localhost:7000
 	@MessageMapping("wishList-create-req-resp")// you can set the controller's invocation string to be anything
 	public Mono<WishListBoundary> createWishlist(WishListBoundary input){
+		System.err.println("$$$$$$$$$$$$$$$$$$$");
 		this.logger.debug("Received wishList-create-req-resp: " + input);
 		
 		// store boundary in DB and return the boundary including updated timestamp and id
