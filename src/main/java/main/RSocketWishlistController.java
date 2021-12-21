@@ -7,9 +7,11 @@ import javax.annotation.PostConstruct;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
@@ -42,8 +44,7 @@ public class RSocketWishlistController {
 	// java -jar rsc-0.9.1.jar --debug  --request  --data "{\"wishListId\":\"123\", \"name\":\"birthday wishlist\", \"userEmail\":\"dummy@s.afeka.ac.il\",  \"createdTimestamp\":\"2021-12-09T13:38:23.104+0000\"}" --route wishList-create-req-resp tcp://localhost:7000
 	@MessageMapping("wishList-create-req-resp")// you can set the controller's invocation string to be anything
 	public Mono<WishListBoundary> createWishlist(WishListBoundary input){
-		System.err.println("$$$$$$$$$$$$$$$$$$$");
-		this.logger.error("Received wishList-create-req-resp: " + input);
+		this.logger.debug("Received wishList-create-req-resp: " + input);
 		
 		// store boundary in DB and return the boundary including updated timestamp and id
 		return Mono.just(input) // Mono<WishListBoundary>
@@ -61,23 +62,49 @@ public class RSocketWishlistController {
 	// java -jar rsc-0.9.1.jar --debug  --fnf  --data "{\"wishListId\":\"61b77330b17283089c8ddf29\", \"productId\":\"p42\"}" --route addProd-fire-and-forget tcp://localhost:7000
 	@MessageMapping("addProd-fire-and-forget")// you can set the controller's invocation string to be anything
 	public Mono<Void> addProductToWishlist(WishListProductBoundary input){
-		System.err.println("$$$$$$$$$$$$$$$$$$$");
-		this.logger.error("Received addProd-fire-and-forget: " + input);
+		this.logger.debug("Received addProd-fire-and-forget: " + input);
 		
 		return this.wishListDao
-				.existsById(input.getWishListId()).log()
+				.existsById(input.getWishListId())
 				.flatMap(exist -> {
 					if (exist) {
 						if (input.getProductId() != null && !input.getProductId().isEmpty()) {
-							System.err.println(toEntity(input).toString());
-							return this.wishListProductDao.save(toEntity(input)).log();
+							return this.wishListProductDao.save(toEntity(input));
 						}
 					}
-					System.err.println("$$$$$$$$$$$$$$$$$$$");
-					return Mono.empty();
+					return Mono.just(exist);
 				})
+				.log()
 				.then();
 	}
+	
+	// java -jar rsc-0.9.1.jar --debug --stream --data "{\"sortBy\":[\"userEmail\", \"wishListId\"], \"order\":\"ASC\"}" --route getLists-stream tcp://localhost:7000
+	@MessageMapping("getLists-stream")
+	public Flux<WishListBoundary> getLists(SortBoundary sortBoundary){
+		this.logger.debug("Received getWishlists stream: " + sortBoundary);
+		
+		return this.wishListDao
+				.findAll(Sort.by(Sort.Direction.fromString(sortBoundary.getOrder()), sortBoundary.getSortBy()))
+				.map(this::toBoundary)
+				.log();
+	}
+	
+	// java -jar rsc-0.9.1.jar --debug --stream --data "{\"wishListId\":\"61b77330b17283089c8ddf29\"}" --route getProductsByList-stream tcp://localhost:7000
+	@MessageMapping("getProductsByList-stream")
+	public Flux<WishListProductBoundary> getProductsByList(WishListBoundary wishlistBoundary){
+		this.logger.debug("Received getSpecificWishList stream: " + wishlistBoundary);
+		
+		return this.wishListProductDao
+				.findByWishListId(wishlistBoundary.getWishListId())
+				.map(this::toBoundary)
+				.log();
+	}
+	
+	
+	
+	
+	
+	
 	
 	private WishListProductEntity toEntity(WishListProductBoundary boundary) {
 		WishListProductEntity rv = new WishListProductEntity();
