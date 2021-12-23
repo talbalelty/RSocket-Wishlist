@@ -49,4 +49,11 @@ public class WishListBoundary {
 	public void setCreatedTimestamp(Date createdTimestamp) {
 		this.createdTimestamp = createdTimestamp;
 	}
+
+	@Override
+	public String toString() {
+		return "WishListBoundary [wishListId=" + wishListId + ", name=" + name + ", userEmail=" + userEmail
+				+ ", createdTimestamp=" + createdTimestamp + "]";
+	}
+	
 }
